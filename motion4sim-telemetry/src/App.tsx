@@ -185,8 +185,7 @@ export default function App() {
               />
 
               <p className="map-note">
-                Forward is up. Motors use the configured clockwise hexapod angles. Load is
-                estimated from absolute raw torque.
+                The marker is the torque-weighted center of load. Forward is up.
               </p>
             </article>
 
@@ -197,20 +196,28 @@ export default function App() {
                 <div className="score-track">
                   <span style={{ width: `${loadData.balanceScore}%` }} />
                 </div>
+                <p className="value-definition">
+                  100% is centered; the score falls as the load center moves outward.
+                </p>
               </article>
               <article className="summary-card">
                 <span>Total absolute torque (raw)</span>
                 <strong>{formatNumber(loadData.totalLoad)}</strong>
                 <small>Across {motors.length} motors</small>
+                <p className="value-definition">
+                  Sum of all motor torque magnitudes, ignoring direction.
+                </p>
               </article>
               <article className="summary-card axis-card">
                 <div>
                   <span>Left / right</span>
                   <strong>{formatOffset(loadData.centerX, "left", "right")}</strong>
+                  <p className="value-definition">Sideways offset from platform center.</p>
                 </div>
                 <div>
                   <span>Front / rear</span>
                   <strong>{formatOffset(loadData.centerY, "front", "rear")}</strong>
+                  <p className="value-definition">Longitudinal offset from platform center.</p>
                 </div>
               </article>
             </aside>
@@ -221,6 +228,9 @@ export default function App() {
               <div>
                 <p className="eyebrow">Individual telemetry</p>
                 <h2>All motors</h2>
+                <p className="section-definition">
+                  Load share is each motor's portion of total absolute torque.
+                </p>
               </div>
               <span className="motor-count">{motors.length} active</span>
             </div>
@@ -240,12 +250,16 @@ export default function App() {
                   <thead>
                     <tr>
                       <th>Motor</th>
-                      <th>Position</th>
-                      <th>Speed</th>
-                      <th>Torque (raw)</th>
-                      <th>Torque bytes</th>
-                      <th>Load share</th>
-                      <th>Status</th>
+                      <th title="Raw position value reported by the controller.">Position</th>
+                      <th title="Motor speed reported by the controller.">Speed</th>
+                      <th title="Signed raw torque value reported by the controller.">
+                        Torque (raw)
+                      </th>
+                      <th title="The four little-endian bytes used to decode raw torque.">
+                        Torque bytes
+                      </th>
+                      <th title="This motor's share of total absolute torque.">Load share</th>
+                      <th title="Raw controller status word.">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -337,15 +351,15 @@ function MotorCard({ motor }: { motor: MotorLoad }) {
       </div>
       <dl>
         <div>
-          <dt>Torque (raw)</dt>
+          <dt title="Signed torque value reported by the controller.">Torque (raw)</dt>
           <dd>{formatTelemetryNumber(motor.torque)}</dd>
         </div>
         <div>
-          <dt>Position</dt>
+          <dt title="Raw motor position reported by the controller.">Position</dt>
           <dd>{motor.position}</dd>
         </div>
         <div>
-          <dt>Speed</dt>
+          <dt title="Current motor speed reported by the controller.">Speed</dt>
           <dd>{formatNumber(motor.speed)}</dd>
         </div>
       </dl>

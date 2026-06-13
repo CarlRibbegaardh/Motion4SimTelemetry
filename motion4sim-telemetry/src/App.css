@@ -460,6 +460,22 @@ button:disabled {
   font-weight: 650;
 }
 
+.value-definition,
+.section-definition {
+  color: #626a7e;
+  font-size: 0.64rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.value-definition {
+  margin-top: 9px;
+}
+
+.section-definition {
+  margin-top: 6px;
+}
+
 .summary-card > strong {
   margin: 5px 0;
   font-size: clamp(1.8rem, 4vw, 2.8rem);
@@ -510,6 +526,10 @@ button:disabled {
   display: block;
   margin-top: 7px;
   font-size: 0.9rem;
+}
+
+.axis-card .value-definition {
+  max-width: 130px;
 }
 
 .motor-section {
@@ -604,6 +624,7 @@ button:disabled {
 .motor-card dt {
   color: #626a7d;
   font-size: 0.62rem;
+  cursor: help;
 }
 
 .motor-card dd {
