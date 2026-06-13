@@ -3,6 +3,7 @@ export interface MotorTelemetry {
   position: number;
   speed: number;
   torque: number;
+  torqueBits: number;
   status: number;
   reserved: number;
 }

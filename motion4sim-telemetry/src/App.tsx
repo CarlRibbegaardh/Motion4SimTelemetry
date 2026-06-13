@@ -93,6 +93,8 @@ export default function App() {
   );
 
   const loadData = useMemo(() => calculateLoad(motors), [motors]);
+  const torqueFieldIsZero =
+    motors.length > 0 && motors.every((motor) => motor.torqueBits === 0);
   const balanceLabel =
     loadData.balanceScore >= 90
       ? "Centered"
@@ -144,6 +146,16 @@ export default function App() {
         </section>
       ) : (
         <>
+          {torqueFieldIsZero && (
+            <div className="telemetry-warning">
+              <strong>The controller is transmitting zero for every torque field.</strong>
+              <span>
+                Raw torque bytes are <code>00 00 00 00</code> for all motors, so the
+                dashboard has no load signal to calculate from.
+              </span>
+            </div>
+          )}
+
           <section className="overview-grid">
             <article className="balance-card">
               <div className="section-heading">
@@ -163,7 +175,7 @@ export default function App() {
               />
 
               <p className="map-note">
-                Motor position follows telemetry order. Load is estimated from absolute torque.
+                Motor position follows telemetry order. Load is estimated from absolute raw torque.
               </p>
             </article>
 
@@ -176,7 +188,7 @@ export default function App() {
                 </div>
               </article>
               <article className="summary-card">
-                <span>Total absolute torque</span>
+                <span>Total absolute torque (raw)</span>
                 <strong>{formatNumber(loadData.totalLoad)}</strong>
                 <small>Across {motors.length} motors</small>
               </article>
@@ -219,7 +231,8 @@ export default function App() {
                       <th>Motor</th>
                       <th>Position</th>
                       <th>Speed</th>
-                      <th>Torque</th>
+                      <th>Torque (raw)</th>
+                      <th>Torque bytes</th>
                       <th>Load share</th>
                       <th>Status</th>
                     </tr>
@@ -230,7 +243,8 @@ export default function App() {
                         <td>Motor {motor.index}</td>
                         <td>{motor.position}</td>
                         <td>{formatNumber(motor.speed)}</td>
-                        <td>{formatNumber(motor.torque)}</td>
+                        <td>{formatTelemetryNumber(motor.torque)}</td>
+                        <td>{formatLittleEndianBytes(motor.torqueBits)}</td>
                         <td>{formatNumber(motor.loadPercent, 1)}%</td>
                         <td>0x{motor.status.toString(16).padStart(4, "0")}</td>
                       </tr>
@@ -311,8 +325,8 @@ function MotorCard({ motor }: { motor: MotorLoad }) {
       </div>
       <dl>
         <div>
-          <dt>Torque</dt>
-          <dd>{formatNumber(motor.torque)}</dd>
+          <dt>Torque (raw)</dt>
+          <dd>{formatTelemetryNumber(motor.torque)}</dd>
         </div>
         <div>
           <dt>Position</dt>
@@ -374,4 +388,26 @@ function formatNumber(value: number, decimals = 2) {
   }
 
   return value.toFixed(decimals);
+}
+
+function formatTelemetryNumber(value: number) {
+  if (!Number.isFinite(value)) {
+    return String(value);
+  }
+
+  if (Number.isInteger(value)) {
+    return String(value);
+  }
+
+  if (value !== 0 && Math.abs(value) < 0.01) {
+    return value.toExponential(4);
+  }
+
+  return value.toFixed(4);
+}
+
+function formatLittleEndianBytes(value: number) {
+  return [0, 8, 16, 24]
+    .map((shift) => ((value >>> shift) & 0xff).toString(16).padStart(2, "0"))
+    .join(" ");
 }

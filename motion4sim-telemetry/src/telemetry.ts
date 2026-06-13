@@ -37,7 +37,8 @@ export function parseTelemetry(buffer: ArrayBuffer): TelemetryFrame | null {
     const speed = view.getFloat32(offset, true);
     offset += 4;
 
-    const torque = view.getFloat32(offset, true);
+    const torqueBits = view.getUint32(offset, true);
+    const torque = view.getInt32(offset, true);
     offset += 4;
 
     const status = view.getUint16(offset, true);
@@ -51,6 +52,7 @@ export function parseTelemetry(buffer: ArrayBuffer): TelemetryFrame | null {
       position,
       speed,
       torque,
+      torqueBits,
       status,
       reserved
     });

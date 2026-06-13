@@ -176,6 +176,27 @@ button:disabled {
   background: rgba(240, 68, 56, 0.08);
 }
 
+.telemetry-warning {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 13px 15px;
+  color: #fec84b;
+  border: 1px solid rgba(247, 144, 9, 0.32);
+  border-radius: 9px;
+  background: rgba(247, 144, 9, 0.08);
+  font-size: 0.78rem;
+}
+
+.telemetry-warning span {
+  color: #b9a778;
+}
+
+.telemetry-warning code {
+  color: #ffe6a7;
+}
+
 .empty-state {
   display: grid;
   min-height: 480px;
@@ -666,6 +687,11 @@ td:first-child {
 
   .connection-panel {
     flex-wrap: wrap;
+  }
+
+  .telemetry-warning {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .connection-panel label {
