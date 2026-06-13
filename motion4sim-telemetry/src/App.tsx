@@ -6,8 +6,18 @@ import "./App.css";
 type MotorLoad = MotorTelemetry & {
   load: number;
   loadPercent: number;
+  angleDegrees: number;
   x: number;
   y: number;
+};
+
+const MOTOR_ANGLES: Record<number, number> = {
+  1: 60,
+  2: 0,
+  3: 300,
+  4: 240,
+  5: 180,
+  6: 120,
 };
 
 export default function App() {
@@ -175,7 +185,8 @@ export default function App() {
               />
 
               <p className="map-note">
-                Motor position follows telemetry order. Load is estimated from absolute raw torque.
+                Forward is up. Motors use the configured clockwise hexapod angles. Load is
+                estimated from absolute raw torque.
               </p>
             </article>
 
@@ -287,6 +298,7 @@ function PlatformMap({
           >
             <span>M{motor.index}</span>
             <strong>{formatNumber(motor.loadPercent, 0)}%</strong>
+            <small>{motor.angleDegrees}°</small>
           </div>
         ))}
         <div
@@ -299,7 +311,7 @@ function PlatformMap({
           <span>LOAD CENTER</span>
         </div>
       </div>
-      <span className="direction front">FRONT</span>
+      <span className="direction front">↑ FRONT</span>
     </div>
   );
 }
@@ -343,19 +355,20 @@ function MotorCard({ motor }: { motor: MotorLoad }) {
 
 function calculateLoad(motors: MotorTelemetry[]) {
   const totalLoad = motors.reduce((sum, motor) => sum + Math.abs(motor.torque), 0);
-  const motorCount = motors.length;
-
   const loadedMotors: MotorLoad[] = motors.map((motor, index) => {
-    // Starts at the front-left for a four-motor platform and scales to any count.
-    const angle = (-135 + (index * 360) / motorCount) * (Math.PI / 180);
+    const angleDegrees =
+      MOTOR_ANGLES[motor.index] ?? (index * 360) / Math.max(motors.length, 1);
+    const angle = angleDegrees * (Math.PI / 180);
     const load = Math.abs(motor.torque);
 
     return {
       ...motor,
       load,
       loadPercent: totalLoad > 0 ? (load / totalLoad) * 100 : 0,
+      angleDegrees,
       x: Math.cos(angle),
-      y: Math.sin(angle),
+      // CSS y coordinates increase downward, so positive platform angles point upward.
+      y: -Math.sin(angle),
     };
   });
 
