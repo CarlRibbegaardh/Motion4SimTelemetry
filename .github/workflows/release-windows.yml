@@ -1,0 +1,65 @@
+name: Publish Windows release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, for example v0.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.12.1"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: motion4sim-telemetry/pnpm-lock.yaml
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Install frontend dependencies
+        working-directory: motion4sim-telemetry
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Windows package
+        run: .\build-windows.cmd
+
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          $asset = "artifacts/Motion4SimTelemetry-win-x64.zip"
+
+          if (gh release view $env:RELEASE_TAG 2>$null) {
+            gh release upload $env:RELEASE_TAG $asset --clobber
+          }
+          else {
+            gh release create $env:RELEASE_TAG $asset `
+              --title "Motion4Sim Telemetry $env:RELEASE_TAG" `
+              --generate-notes `
+              --target $env:GITHUB_SHA
+          }
