@@ -260,6 +260,43 @@ button:disabled {
   margin-top: 5px;
 }
 
+.balance-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.sensitivity-control {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+
+.sensitivity-control > span {
+  color: #777f93;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.sensitivity-control select {
+  min-width: 160px;
+  padding: 7px 9px;
+  color: #d9d6ff;
+  border: 1px solid #35304f;
+  border-radius: 7px;
+  outline: none;
+  background: #11131d;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sensitivity-control select:focus {
+  border-color: #7c6df2;
+  box-shadow: 0 0 0 3px rgba(124, 109, 242, 0.13);
+}
+
 .balance-badge,
 .motor-count,
 .motor-status {
@@ -404,6 +441,11 @@ button:disabled {
   background: #7f6cf2;
   box-shadow: 0 0 0 5px rgba(127, 108, 242, 0.2), 0 0 22px #7f6cf2;
   transition: left 160ms ease-out, top 160ms ease-out;
+}
+
+.load-center.display-clamped {
+  border-color: #fec84b;
+  box-shadow: 0 0 0 5px rgba(247, 144, 9, 0.18), 0 0 22px rgba(247, 144, 9, 0.7);
 }
 
 .load-center span {
@@ -742,6 +784,20 @@ td:first-child {
   .balance-card {
     min-height: auto;
     padding: 18px;
+  }
+
+  .balance-card .section-heading {
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .balance-controls {
+    align-items: flex-end;
+    flex-direction: column-reverse;
+  }
+
+  .sensitivity-control select {
+    min-width: 145px;
   }
 
   .platform-map {

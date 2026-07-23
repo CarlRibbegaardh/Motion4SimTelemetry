@@ -20,12 +20,23 @@ const MOTOR_ANGLES: Record<number, number> = {
   6: 120,
 };
 
+const SENSITIVITY_OPTIONS = [
+  { value: 1, label: "Normal", description: "Current scale" },
+  { value: 2, label: "Fine", description: "2x movement" },
+  { value: 4, label: "Very fine", description: "4x movement" },
+  { value: 8, label: "Super fine", description: "8x movement" },
+] as const;
+
 export default function App() {
   const [controllerIp, setControllerIp] = useState("192.168.50.88");
   const [connected, setConnected] = useState(false);
   const [motors, setMotors] = useState<MotorTelemetry[]>([]);
   const [lastFrameTime, setLastFrameTime] = useState<string>("-");
   const [error, setError] = useState<string>("");
+  const [sensitivity, setSensitivity] = useState(() => {
+    const saved = Number(window.localStorage.getItem("load-map-sensitivity"));
+    return SENSITIVITY_OPTIONS.some((option) => option.value === saved) ? saved : 1;
+  });
 
   const wsRef = useRef<WebSocket | null>(null);
   const pingTimerRef = useRef<number | null>(null);
@@ -102,6 +113,10 @@ export default function App() {
     [],
   );
 
+  useEffect(() => {
+    window.localStorage.setItem("load-map-sensitivity", String(sensitivity));
+  }, [sensitivity]);
+
   const loadData = useMemo(() => calculateLoad(motors), [motors]);
   const torqueFieldIsZero =
     motors.length > 0 && motors.every((motor) => motor.torqueBits === 0);
@@ -173,19 +188,36 @@ export default function App() {
                   <p className="eyebrow">Live estimate</p>
                   <h2>Load center</h2>
                 </div>
-                <span className={`balance-badge score-${balanceLabel.toLowerCase().replace(" ", "-")}`}>
-                  {balanceLabel}
-                </span>
+                <div className="balance-controls">
+                  <label className="sensitivity-control">
+                    <span>View sensitivity</span>
+                    <select
+                      value={sensitivity}
+                      onChange={(event) => setSensitivity(Number(event.target.value))}
+                    >
+                      {SENSITIVITY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label} ({option.description})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <span className={`balance-badge score-${balanceLabel.toLowerCase().replace(" ", "-")}`}>
+                    {balanceLabel}
+                  </span>
+                </div>
               </div>
 
               <PlatformMap
                 motors={loadData.motors}
                 centerX={loadData.centerX}
                 centerY={loadData.centerY}
+                sensitivity={sensitivity}
               />
 
               <p className="map-note">
-                The marker is the torque-weighted center of load. Forward is up.
+                Marker movement is shown at {sensitivity}x. Numeric values and balance
+                score remain unscaled. Forward is up.
               </p>
             </article>
 
@@ -289,11 +321,15 @@ function PlatformMap({
   motors,
   centerX,
   centerY,
+  sensitivity,
 }: {
   motors: MotorLoad[];
   centerX: number;
   centerY: number;
+  sensitivity: number;
 }) {
+  const displayCenter = scaleCenterForDisplay(centerX, centerY, sensitivity);
+
   return (
     <div className="platform-map" aria-label="Top-down platform load map">
       <div className="platform-surface">
@@ -316,18 +352,40 @@ function PlatformMap({
           </div>
         ))}
         <div
-          className="load-center"
+          className={`load-center ${displayCenter.clamped ? "display-clamped" : ""}`}
           style={{
-            left: `${50 + centerX * 39}%`,
-            top: `${50 + centerY * 39}%`,
+            left: `${50 + displayCenter.x * 39}%`,
+            top: `${50 + displayCenter.y * 39}%`,
           }}
+          title={
+            displayCenter.clamped
+              ? "Amplified marker position is capped at the platform edge."
+              : undefined
+          }
         >
-          <span>LOAD CENTER</span>
+          <span>
+            LOAD CENTER {sensitivity > 1 ? `${sensitivity}x` : ""}
+            {displayCenter.clamped ? " MAX" : ""}
+          </span>
         </div>
       </div>
       <span className="direction front">↑ FRONT</span>
     </div>
   );
+}
+
+function scaleCenterForDisplay(centerX: number, centerY: number, sensitivity: number) {
+  const scaledX = centerX * sensitivity;
+  const scaledY = centerY * sensitivity;
+  const distance = Math.hypot(scaledX, scaledY);
+  const maximumDistance = 0.94;
+
+  if (distance <= maximumDistance || distance === 0) {
+    return { x: scaledX, y: scaledY, clamped: false };
+  }
+
+  const clampScale = maximumDistance / distance;
+  return { x: scaledX * clampScale, y: scaledY * clampScale, clamped: true };
 }
 
 function MotorCard({ motor }: { motor: MotorLoad }) {
@@ -401,12 +459,12 @@ function calculateLoad(motors: MotorTelemetry[]) {
 }
 
 function formatOffset(value: number, negativeDirection: string, positiveDirection: string) {
-  if (Math.abs(value) < 0.01) {
+  if (Math.abs(value) < 0.0005) {
     return "Centered";
   }
 
   const direction = value > 0 ? positiveDirection : negativeDirection;
-  return `${formatNumber(Math.abs(value) * 100, 0)}% ${direction}`;
+  return `${formatNumber(Math.abs(value) * 100, 1)}% ${direction}`;
 }
 
 function formatNumber(value: number, decimals = 2) {
